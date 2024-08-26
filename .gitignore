@@ -75,3 +75,5 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.development.json
+.env.production.json

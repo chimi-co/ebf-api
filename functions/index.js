@@ -1,17 +1,25 @@
-const {pubsub} = require("firebase-functions");
+const {https, pubsub} = require("firebase-functions");
 
-const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
-const {monitorDelegatedAttestations} = require("./services/JobService");
+const express = require('express')
+const cors = require('cors')
 
-const helloWorld = onRequest(async (request, response) => {
-  logger.info("Hello logs!", {structuredData: true});
-  // await monitorDelegatedAttestations()
-  response.send("Hello from Firebase!");
-});
+const {monitorDelegatedAttestations} = require("./services/JobService")
+const {doRetrieveIpfsUri} = require("./controllers/IpfsController")
+
+const corsOptions = {
+  origin: '*',
+  optionsSuccessStatus: 200,
+}
+
+const app = express()
+app.use(cors(corsOptions))
+
+// New api endpoints - routes
+app.get('/ipfs/:id', doRetrieveIpfsUri)
 
 module.exports = {
-  helloWorld,
+  // New api endpoints:
+  api: https.onRequest(app),
 
   // Jobs
   attestationsDelegatedMonitor: pubsub
