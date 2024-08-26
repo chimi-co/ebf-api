@@ -34,13 +34,8 @@ async function getDocuments(collectionName, conditions = []) {
 
 async function updateDocument(collectionName, documentId, updatedData) {
   try {
-    // Referencia al documento
     const docRef = doc(db, collectionName, documentId);
-
-    // Actualizar el documento
     await updateDoc(docRef, updatedData);
-
-    console.log('Document successfully updated');
   } catch (error) {
     console.error('Error updating document:', error);
   }
@@ -73,12 +68,19 @@ const updateSignature = async (id, values) => {
   await updateDocument('DelegateAttestationSigns', id, values)
 }
 
+const getSurvey = async (id) => {
+  const surveyRef = doc(db, 'surveys', id)
+  const docSnap =  await getDoc(surveyRef)
+  return docSnap.data()
+}
+
 const updateSurvey = async (id, values) => {
   await updateDocument('surveys', id, values)
 }
 
 module.exports = {
   getMonitor,
+  getSurvey,
   getPendingSignatures,
   getSignatureById,
   updateMonitor,

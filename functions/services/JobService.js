@@ -1,24 +1,10 @@
-const {logger} = require("firebase-functions");
-const {getPendingSignatures, getMonitor, updateMonitor, updateSignature, updateSurvey} = require("./FirestoreService");
-const {ethers} = require("ethers");
-const {EAS} = require("@ethereum-attestation-service/eas-sdk");
-const functions = require("firebase-functions");
+const {logger} = require("firebase-functions")
+const {getPendingSignatures, getMonitor, updateMonitor, updateSignature, updateSurvey} = require("./FirestoreService")
+
+const {getEASClient} = require("./EASService")
 
 const monitorDelegatedAttestations = async () => {
   logger.info('Starting monitorDelegatedAttestations monitor')
-
-  const mnemonic = functions.config().config.mnemonic
-
-  logger.info('mnemonic', mnemonic)
-  const providerUrl = 'https://sepolia.infura.io/v3/4995daead95c4cb789600bfe1eb67254'
-
-  const provider =  new ethers.JsonRpcProvider(providerUrl)
-  const wallet = ethers.Wallet.fromPhrase(mnemonic, provider)
-
-  const SEPOLIA_EAS_CONTRACT_ADDRESS = '0xC2679fBD37d54388Ce493F1DB75320D236e1815e'
-
-  const eas = new EAS(SEPOLIA_EAS_CONTRACT_ADDRESS)
-  eas.connect(wallet)
 
   const monitor = await getMonitor('delegatedAttestation')
 
@@ -42,12 +28,15 @@ const monitorDelegatedAttestations = async () => {
         attester: signature.attester,
       }
 
+      const networkName = signature?.network?.name
+      const eas = getEASClient(networkName)
+
       try {
         const tx = await eas.attestByDelegation(params)
         const response = await tx.wait()
 
         await updateSignature(signature.id, {attestUID: response, status: 'COMPLETED'})
-        await updateSurvey(signature.surveyId, {status: 'COMPLETED'})
+        await updateSurvey(signature.surveyId, {status: 'COMPLETED', attestation: {attestUID: response, network: networkName}})
 
         logger.info('Signature attested', signature.id)
       } catch (error){
